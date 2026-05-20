@@ -1,6 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { SubwayPanel } from "./SubwayPanel";
+
+type TabId = "subway" | "weather" | "country";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "subway", label: "지하철 도착" },
+  { id: "weather", label: "날씨" },
+  { id: "country", label: "국가 정보" },
+];
 
 type City = { id: string; label: string; lat: number; lon: number };
 
@@ -94,6 +103,8 @@ async function fetchKorea(): Promise<KoreaCountry> {
 }
 
 export function KoreaDashboard() {
+  const [tab, setTab] = useState<TabId>("subway");
+
   const [cityId, setCityId] = useState<string>("seoul");
   const city = useMemo(() => KOREA_CITIES.find((c) => c.id === cityId) ?? KOREA_CITIES[0]!, [cityId]);
 
@@ -145,8 +156,42 @@ export function KoreaDashboard() {
   }
 
   return (
-    <div className="grid">
-      <section className="card">
+    <div className="dashboard">
+      <div className="tablist" role="tablist" aria-label="기능 탭">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            id={`tab-${t.id}`}
+            aria-selected={tab === t.id}
+            aria-controls={`panel-${t.id}`}
+            className={`tab ${tab === t.id ? "active" : ""}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <section
+        className="card tab-panel"
+        role="tabpanel"
+        id="panel-subway"
+        aria-labelledby="tab-subway"
+        hidden={tab !== "subway"}
+      >
+        <h2 className="card-title">지하철 도착정보</h2>
+        <SubwayPanel active={tab === "subway"} />
+      </section>
+
+      <section
+        className="card tab-panel"
+        role="tabpanel"
+        id="panel-weather"
+        aria-labelledby="tab-weather"
+        hidden={tab !== "weather"}
+      >
         <h2 className="card-title">한국 도시 날씨</h2>
         <p className="card-desc">대한민국 주요 도시를 선택해 현재 기온·풍속·하늘 상태를 봅니다. (키 없이 동작)</p>
         <div className="row">
@@ -169,7 +214,13 @@ export function KoreaDashboard() {
         <pre className="output">{weatherText}</pre>
       </section>
 
-      <section className="card">
+      <section
+        className="card tab-panel"
+        role="tabpanel"
+        id="panel-country"
+        aria-labelledby="tab-country"
+        hidden={tab !== "country"}
+      >
         <h2 className="card-title">대한민국 정보</h2>
         <p className="card-desc">REST Countries에서 대한민국 요약 정보를 가져옵니다. (키 없이 동작)</p>
         <div className="row">
@@ -182,4 +233,3 @@ export function KoreaDashboard() {
     </div>
   );
 }
-

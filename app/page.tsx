@@ -7,7 +7,7 @@ export default function Page() {
       <header className="header">
         <h1 className="title">K-Open API Starter</h1>
         <p className="subtitle">
-          대한민국 기준(도시/표기/링크)으로 공개 API를 연결합니다 — Open‑Meteo(날씨), REST Countries(국가).
+          대한민국 기준으로 공개 API를 연결합니다 — 서울 지하철 도착, Open‑Meteo(날씨), REST Countries(국가).
         </p>
         <nav className="toplinks" aria-label="문서 링크">
           <Link className="chip" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">

@@ -81,16 +81,50 @@ a {
   background: rgba(125, 211, 252, 0.1);
 }
 
-.grid {
-  display: grid;
-  gap: 1.25rem;
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-@media (min-width: 720px) {
-  .grid {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
+.tablist {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  padding: 0.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.tab {
+  flex: 1 1 auto;
+  min-width: 5.5rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tab.active {
+  color: var(--text);
+  background: var(--accent-dim);
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.25);
+}
+
+.tab-panel[hidden] {
+  display: none;
 }
 
 .card {
@@ -199,5 +233,212 @@ a {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+/* 지하철 패널 */
+.subway-panel .card-desc {
+  margin-top: -0.25rem;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.field-error {
+  margin: 0.5rem 0 0;
+  color: #fca5a5;
+  font-size: 0.88rem;
+}
+
+.field-hint {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.suggestion-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.suggestion-btn {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.suggestion-btn:hover {
+  border-color: rgba(125, 211, 252, 0.35);
+  background: var(--accent-dim);
+}
+
+.section-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.favorite-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fav-chip {
+  padding-right: 0.35rem;
+}
+
+.chip-remove {
+  margin-left: 0.35rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.15rem;
+}
+
+.chip-remove:hover {
+  color: var(--text);
+}
+
+.panel-placeholder {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0.75rem;
+}
+
+.status-pill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(125, 211, 252, 0.15);
+  color: var(--accent);
+}
+
+.status-pill.muted {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+
+.status-pill.live {
+  background: rgba(52, 211, 153, 0.15);
+  color: #6ee7b7;
+}
+
+.status-time {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.api-notice {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.api-notice code {
+  font-size: 0.85em;
+}
+
+.station-results {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.station-block {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.station-name {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.station-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.station-hint.error {
+  color: #fca5a5;
+}
+
+.arrival-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.arrival-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.65rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.arrival-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.arrival-line {
+  grid-column: 1;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.arrival-dir {
+  grid-column: 2;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.arrival-msg {
+  grid-column: 1 / -1;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 

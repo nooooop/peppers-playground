@@ -138,24 +138,29 @@ export function SubwayPanel({ active }: { active: boolean }) {
   }
 
   if (!hydrated) {
-    return <p className="panel-placeholder">불러오는 중…</p>;
+    return (
+      <section className="panel">
+        <p className="panel-placeholder">불러오는 중…</p>
+      </section>
+    );
   }
 
   return (
-    <div className="subway-panel">
-      <p className="card-desc">
-        즐겨찾기 역(최대 {MAX_SUBWAY_FAVORITES}개)의 실시간 도착정보입니다. 화면이 보일 때만{" "}
-        {REFRESH_MS / 1000}초마다 갱신합니다.
+    <section className="panel subway-panel">
+      <h2 className="panel-title">지하철 도착</h2>
+      <p className="panel-desc">
+        즐겨찾기 역(최대 {MAX_SUBWAY_FAVORITES}개). 화면이 보일 때만 {REFRESH_MS / 1000}초마다
+        갱신합니다.
       </p>
 
       <div className="subway-add">
         <label className="field-label" htmlFor="subway-station-input">
           역 추가
         </label>
-        <div className="row">
+        <div className="panel-row">
           <input
             id="subway-station-input"
-            className="input"
+            className="subway-input"
             list="subway-station-suggestions"
             value={query}
             onChange={(e) => {
@@ -177,12 +182,7 @@ export function SubwayPanel({ active }: { active: boolean }) {
               <option key={name} value={name} />
             ))}
           </datalist>
-          <button
-            type="button"
-            className="btn primary"
-            onClick={onAddStation}
-            disabled={isFull}
-          >
+          <button type="button" className="panel-btn" onClick={onAddStation} disabled={isFull}>
             추가
           </button>
         </div>
@@ -213,7 +213,7 @@ export function SubwayPanel({ active }: { active: boolean }) {
           <ul className="favorite-chips">
             {favorites.map((f) => (
               <li key={f.id}>
-                <span className="chip fav-chip">
+                <span className="fav-chip">
                   {f.name}
                   <button
                     type="button"
@@ -259,6 +259,6 @@ export function SubwayPanel({ active }: { active: boolean }) {
           ))}
         </div>
       ) : null}
-    </div>
+    </section>
   );
 }

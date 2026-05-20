@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { RegisterServiceWorker } from "../src/components/RegisterServiceWorker";
+import { SessionProvider } from "../src/components/SessionProvider";
 
 export const metadata: Metadata = {
   title: "K-Open API Starter",
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f1218",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko">
       <body>
         <RegisterServiceWorker />
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

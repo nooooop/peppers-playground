@@ -1,35 +1,40 @@
-import Link from "next/link";
-import { KoreaDashboard } from "../src/components/KoreaDashboard";
+import { BottomNavShell } from "../src/components/BottomNavShell";
+import { GoogleWorkspacePanel } from "../src/components/GoogleWorkspacePanel";
+import { KoreaWeatherPanel } from "../src/components/KoreaWeatherPanel";
+import { SubwayPanel } from "../src/components/SubwayPanel";
+
+const HOME_TABS = [
+  {
+    id: "subway",
+    label: "지하철",
+    icon: "🚇",
+    content: <SubwayPanel active />,
+  },
+  {
+    id: "weather",
+    label: "한국 날씨",
+    icon: "🌤️",
+    content: <KoreaWeatherPanel />,
+  },
+  {
+    id: "google",
+    label: "구글 메모·할 일",
+    icon: "📝",
+    content: <GoogleWorkspacePanel />,
+  },
+] as const;
 
 export default function Page() {
   return (
-    <main className="layout">
-      <header className="header">
-        <h1 className="title">K-Open API Starter</h1>
-        <p className="subtitle">
-          대한민국 기준으로 공개 API를 연결합니다 — 서울 지하철 도착, Open‑Meteo(날씨), REST Countries(국가).
+    <main className="page-root">
+      <header className="page-header">
+        <h1 className="page-title">K-Open API Starter</h1>
+        <p className="page-subtitle">
+          하단 메뉴에서 화면을 전환합니다. 지하철 도착·날씨·구글 연동.
         </p>
-        <nav className="toplinks" aria-label="문서 링크">
-          <Link className="chip" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">
-            Open‑Meteo
-          </Link>
-          <Link className="chip" href="https://restcountries.com/" target="_blank" rel="noopener noreferrer">
-            REST Countries
-          </Link>
-          <Link className="chip" href="https://data.go.kr/" target="_blank" rel="noopener noreferrer">
-            공공데이터포털
-          </Link>
-        </nav>
       </header>
 
-      <KoreaDashboard />
-
-      <footer className="footer">
-        <p className="foot-note">
-          iPhone에서 “공유 → 홈 화면에 추가”로 앱처럼 설치할 수 있습니다. (PWA 설정은 다음 단계에서 완성합니다.)
-        </p>
-      </footer>
+      <BottomNavShell tabs={[...HOME_TABS]} defaultTabId="subway" />
     </main>
   );
 }
-

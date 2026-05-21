@@ -1,24 +1,60 @@
 "use client";
 
-import { getSubwayLineColor, getSubwayLineLabel } from "../data/subwayLineColors";
+import {
+  getSubwayLineBadge,
+  getSubwayLineColor,
+  getSubwayLineLabel,
+} from "../data/subwayLineColors";
 import { classifyArrivalSide, type StationDiagramLayout } from "../lib/classifyArrivalSide";
+import { formatArrivalTime, formatDestinationLabel } from "../lib/formatArrivalDisplay";
+import { pickArrivalsToShow } from "../lib/pickArrivalsToShow";
 import type { StationArrivalResult, SubwayArrivalRow } from "../lib/seoulSubway";
 
-function ArrivalBubble({ row }: { row: SubwayArrivalRow }) {
+function ArrivalRow({ row }: { row: SubwayArrivalRow }) {
+  const dest = formatDestinationLabel(row);
+  const time = formatArrivalTime(row);
   return (
-    <div className="diagram-arrival">
-      <span className="diagram-arrival-msg">{row.arvlMsg2 || row.arvlMsg3}</span>
-      <span className="diagram-arrival-sub">{row.trainLineNm}</span>
+    <div className="line-board-row">
+      <span className="line-board-dest">{dest}</span>
+      <span className="line-board-time">{time}</span>
     </div>
   );
 }
 
-function LineRow({
+function ArrivalColumn({ rows }: { rows: SubwayArrivalRow[] }) {
+  if (rows.length === 0) {
+    return <p className="line-board-empty">—</p>;
+  }
+  return (
+    <div className="line-board-col-inner">
+      {rows.map((row, i) => (
+        <ArrivalRow
+          key={`${row.subwayId}-${row.updnLine}-${row.barvlDt}-${row.arvlMsg2}-${i}`}
+          row={row}
+        />
+      ))}
+    </div>
+  );
+}
+
+function LineBadge({ subwayId }: { subwayId: string }) {
+  const color = getSubwayLineColor(subwayId);
+  const text = getSubwayLineBadge(subwayId);
+  return (
+    <span className="line-badge" style={{ color }} aria-hidden="true">
+      {text}
+    </span>
+  );
+}
+
+function LineBoard({
   layout,
   arrivals,
+  isGrouped,
 }: {
   layout: StationDiagramLayout["lines"][number];
   arrivals: SubwayArrivalRow[];
+  isGrouped: boolean;
 }) {
   const lineArrivals = arrivals.filter((a) => a.subwayId === layout.subwayId);
   const left: SubwayArrivalRow[] = [];
@@ -30,51 +66,50 @@ function LineRow({
     else right.push(row);
   }
 
+  const leftShown = pickArrivalsToShow(left);
+  const rightShown = pickArrivalsToShow(right);
+
   const color = getSubwayLineColor(layout.subwayId);
-  const lineLabel = getSubwayLineLabel(
-    layout.subwayId,
-    lineArrivals[0]?.subwayNm ?? ""
-  );
+  const sample = lineArrivals[0];
+  const lineLabel = getSubwayLineLabel(layout.subwayId, sample?.subwayNm ?? "");
 
   return (
-    <div className="diagram-line-block">
-      <div className="diagram-line-label" style={{ color }}>
-        {lineLabel}
+    <section className={`line-board${isGrouped ? " line-board--grouped" : ""}`}>
+      <div className="line-board-header" style={{ backgroundColor: color }}>
+        <span className="line-board-nav line-board-nav--prev">
+          <span className="line-board-chev" aria-hidden="true">
+            ‹
+          </span>
+          {layout.leftEndpoint}
+        </span>
+
+        <span className="line-board-line-label">
+          <LineBadge subwayId={layout.subwayId} />
+          <span className="line-board-line-name">{lineLabel}</span>
+        </span>
+
+        <span className="line-board-nav line-board-nav--next">
+          {layout.rightEndpoint !== layout.leftEndpoint ? (
+            <>
+              {layout.rightEndpoint}
+              <span className="line-board-chev" aria-hidden="true">
+                ›
+              </span>
+            </>
+          ) : null}
+        </span>
       </div>
-      <div className="diagram-line-row">
-        <div className="diagram-wing diagram-wing--left">
-          <div className="diagram-endpoint">
-            <span className="diagram-arrow" aria-hidden="true">
-              ←
-            </span>
-            <span>{layout.leftEndpoint}</span>
-          </div>
-          <div className="diagram-arrivals">
-            {left.map((row, i) => (
-              <ArrivalBubble key={`l-${row.subwayId}-${row.updnLine}-${row.arvlMsg2}-${i}`} row={row} />
-            ))}
-          </div>
-        </div>
 
-        <div className="diagram-track" aria-hidden="true">
-          <div className="diagram-track-bar" style={{ backgroundColor: color }} />
+      <div className="line-board-body">
+        <div className="line-board-col">
+          <ArrivalColumn rows={leftShown} />
         </div>
-
-        <div className="diagram-wing diagram-wing--right">
-          <div className="diagram-endpoint diagram-endpoint--right">
-            <span>{layout.rightEndpoint}</span>
-            <span className="diagram-arrow" aria-hidden="true">
-              →
-            </span>
-          </div>
-          <div className="diagram-arrivals">
-            {right.map((row, i) => (
-              <ArrivalBubble key={`r-${row.subwayId}-${row.updnLine}-${row.arvlMsg2}-${i}`} row={row} />
-            ))}
-          </div>
+        <div className="line-board-divider" aria-hidden="true" />
+        <div className="line-board-col">
+          <ArrivalColumn rows={rightShown} />
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -84,12 +119,27 @@ type Props = {
 };
 
 export function SubwayStationDiagram({ result, layout }: Props) {
+  const isMultiLine = layout.lines.length > 1;
+
   return (
-    <article className="station-diagram">
-      <h3 className="station-diagram-name">{layout.stationName}</h3>
-      {layout.lines.map((line) => (
-        <LineRow key={line.subwayId} layout={line} arrivals={result.arrivals} />
-      ))}
+    <article className={`station-group${isMultiLine ? " station-group--multi" : ""}`}>
+      <header className="station-group-header">
+        <h3 className="station-group-name">{layout.stationName}</h3>
+        {isMultiLine ? (
+          <span className="station-group-meta">{layout.lines.length}개 노선</span>
+        ) : null}
+      </header>
+
+      <div className="station-group-lines">
+        {layout.lines.map((line) => (
+          <LineBoard
+            key={line.subwayId}
+            layout={line}
+            arrivals={result.arrivals}
+            isGrouped
+          />
+        ))}
+      </div>
     </article>
   );
 }

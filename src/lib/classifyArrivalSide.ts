@@ -1,3 +1,4 @@
+import { headingKeywords, parseTrainHeadingFromRow } from "./parseTrainHeading";
 import type { SubwayArrivalRow } from "./seoulSubway";
 
 export type ArrivalSide = "left" | "right";
@@ -12,6 +13,9 @@ export type StationLineLayout = {
   leftKeywords: string[];
   /** 열차가 이 방향에서 오면 오른쪽 열에 도착 표시 */
   rightKeywords: string[];
+  /** API 상·하행 등 — 좌우 분류의 1순위 */
+  leftUpdnLines: string[];
+  rightUpdnLines: string[];
 };
 
 export type StationDiagramLayout = {
@@ -19,32 +23,44 @@ export type StationDiagramLayout = {
   lines: StationLineLayout[];
 };
 
-function haystack(arrival: SubwayArrivalRow): string {
-  return `${arrival.trainLineNm} ${arrival.bstatnNm} ${arrival.arvlMsg2} ${arrival.arvlMsg3}`;
-}
-
 function matchesAny(text: string, keywords: string[]): boolean {
   return keywords.some((k) => k.length > 0 && text.includes(k));
 }
 
-/** trainLineNm 의 "OOO방면" 구간 */
-function headingFragment(trainLineNm: string): string {
-  const part = trainLineNm.split("-").pop()?.trim() ?? trainLineNm;
-  return part.replace(/방면$/, "");
+function normalizeUpdnLine(updnLine: string): string {
+  return updnLine.trim();
+}
+
+function matchesEndpoint(heading: string, endpoint: string): boolean {
+  if (!heading || !endpoint) return false;
+  if (heading === endpoint) return true;
+  return matchesAny(heading, headingKeywords(endpoint));
 }
 
 export function classifyArrivalSide(
   arrival: SubwayArrivalRow,
   line: StationLineLayout
 ): ArrivalSide {
-  const text = haystack(arrival);
-  const heading = headingFragment(arrival.trainLineNm);
+  const updn = normalizeUpdnLine(arrival.updnLine);
+  const heading = parseTrainHeadingFromRow(arrival);
 
-  if (matchesAny(heading, line.rightKeywords) || matchesAny(text, line.rightKeywords)) {
-    return "right";
+  const hasDistinctSides =
+    line.rightEndpoint &&
+    line.leftEndpoint &&
+    line.rightEndpoint !== line.leftEndpoint;
+
+  if (hasDistinctSides && line.leftUpdnLines.length > 0 && line.rightUpdnLines.length > 0) {
+    if (updn && line.leftUpdnLines.includes(updn)) return "left";
+    if (updn && line.rightUpdnLines.includes(updn)) return "right";
   }
-  if (matchesAny(heading, line.leftKeywords) || matchesAny(text, line.leftKeywords)) {
-    return "left";
+
+  if (hasDistinctSides && heading) {
+    if (matchesEndpoint(heading, line.rightEndpoint) || matchesAny(heading, line.rightKeywords)) {
+      return "right";
+    }
+    if (matchesEndpoint(heading, line.leftEndpoint) || matchesAny(heading, line.leftKeywords)) {
+      return "left";
+    }
   }
 
   return "left";

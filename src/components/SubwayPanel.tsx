@@ -11,8 +11,9 @@ import {
   MAX_SUBWAY_FAVORITES,
   useSubwayFavorites,
 } from "../hooks/useSubwayFavorites";
-import { getStationDiagramLayout } from "../data/subwayStationLayouts";
+import { buildStationDiagramLayout } from "../lib/buildStationDiagramLayout";
 import type { StationArrivalResult, SubwayArrivalRow } from "../lib/seoulSubway";
+import { formatArrivalTime } from "../lib/formatArrivalDisplay";
 import { SubwayStationDiagram } from "./SubwayStationDiagram";
 
 const REFRESH_SEC = 20;
@@ -36,13 +37,16 @@ function ArrivalCard({ row }: { row: SubwayArrivalRow }) {
     <li className="arrival-item">
       <span className="arrival-line">{row.subwayNm}</span>
       <span className="arrival-dir">{row.trainLineNm}</span>
-      <span className="arrival-msg">{row.arvlMsg2 || row.arvlMsg3}</span>
+      <span className="arrival-msg">{formatArrivalTime(row)}</span>
     </li>
   );
 }
 
 function StationBlock({ result }: { result: StationArrivalResult }) {
-  const diagramLayout = getStationDiagramLayout(result.stationName);
+  const diagramLayout =
+    result.ok && result.arrivals.length > 0
+      ? buildStationDiagramLayout(result.stationName, result.arrivals)
+      : null;
 
   if (!result.ok && result.message) {
     return (
@@ -62,7 +66,7 @@ function StationBlock({ result }: { result: StationArrivalResult }) {
     );
   }
 
-  if (diagramLayout && result.arrivals.length > 0) {
+  if (diagramLayout) {
     return <SubwayStationDiagram result={result} layout={diagramLayout} />;
   }
 
@@ -72,7 +76,10 @@ function StationBlock({ result }: { result: StationArrivalResult }) {
       {result.arrivals.length > 0 ? (
         <ul className="arrival-list">
           {result.arrivals.map((row, i) => (
-            <ArrivalCard key={`${row.subwayId}-${row.updnLine}-${row.btrainSttus}-${i}`} row={row} />
+            <ArrivalCard
+              key={`${row.subwayId}-${row.updnLine}-${row.barvlDt}-${row.arvlMsg2}-${i}`}
+              row={row}
+            />
           ))}
         </ul>
       ) : null}
@@ -286,10 +293,13 @@ export function SubwayPanel({ active }: { active: boolean }) {
 
       {fetchError ? <p className="field-error">{fetchError}</p> : null}
 
-      {stationNames.length > 0 && data?.stations ? (
+      {stationNames.length > 0 && data?.stations && data.updatedAt ? (
         <div className="station-results">
           {data.stations.map((result) => (
-            <StationBlock key={result.stationName} result={result} />
+            <StationBlock
+              key={`${result.stationName}-${data.updatedAt}`}
+              result={result}
+            />
           ))}
         </div>
       ) : null}

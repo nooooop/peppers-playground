@@ -544,127 +544,175 @@ a {
   color: var(--muted);
 }
 
-/* 역 노선도 (삼각지 등) */
-.station-diagram {
-  padding: 1rem 0.75rem;
-  border-radius: 12px;
+/* 역 노선도 — 역 단위 묶음 + 노선별 도착 */
+.station-group {
+  border-radius: 16px;
+  overflow: hidden;
   border: 1px solid var(--border);
-  background: #0f172a;
-  color: #f1f5f9;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.08);
 }
 
-.station-diagram-name {
-  margin: 0 0 1rem;
-  text-align: center;
-  font-size: 1.35rem;
+.station-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.station-group-name {
+  margin: 0;
+  font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
-.diagram-line-block {
-  margin-bottom: 1.25rem;
-}
-
-.diagram-line-block:last-child {
-  margin-bottom: 0;
-}
-
-.diagram-line-label {
+.station-group-meta {
   font-size: 0.78rem;
-  font-weight: 700;
-  margin-bottom: 0.35rem;
-  text-align: center;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
 }
 
-.diagram-line-row {
-  display: grid;
-  grid-template-columns: 1fr minmax(4.5rem, 28%) 1fr;
-  gap: 0.35rem;
-  align-items: stretch;
-}
-
-.diagram-wing {
+.station-group-lines {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  min-width: 0;
 }
 
-.diagram-wing--right {
-  align-items: flex-end;
-  text-align: right;
+.station-group--multi .line-board--grouped + .line-board--grouped {
+  border-top: 1px solid var(--border);
 }
 
-.diagram-endpoint {
-  display: flex;
+.line-board {
+  border-radius: 0;
+  overflow: hidden;
+  border: none;
+  background: #fff;
+  box-shadow: none;
+}
+
+.line-board--grouped:last-child {
+  border-radius: 0 0 16px 16px;
+}
+
+.line-board-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 0.2rem;
-  font-size: 0.8rem;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  color: #fff;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: #e2e8f0;
-  white-space: nowrap;
 }
 
-.diagram-endpoint--right {
+.line-board-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.line-board-nav--prev {
+  justify-content: flex-start;
+}
+
+.line-board-nav--next {
   justify-content: flex-end;
 }
 
-.diagram-arrow {
-  font-size: 0.75rem;
-  opacity: 0.85;
+.line-board-chev {
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.95;
 }
 
-.diagram-track {
-  display: flex;
+.line-board-line-label {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.line-badge {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.15rem 0;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.2rem;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-.diagram-track-bar {
-  width: 100%;
-  height: 0.55rem;
-  border-radius: 999px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+.line-board-line-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
-.diagram-arrivals {
+.line-board-body {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  min-height: 4.5rem;
+}
+
+.line-board-col {
+  padding: 0.65rem 0.75rem 0.75rem;
+  min-width: 0;
+}
+
+.line-board-divider {
+  background: #e2e8f0;
+}
+
+.line-board-col-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  width: 100%;
+  gap: 0.55rem;
 }
 
-.diagram-wing--right .diagram-arrivals {
-  align-items: flex-end;
+.line-board-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
-.diagram-arrival {
-  max-width: 100%;
-  padding: 0.4rem 0.5rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.line-board-dest {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+  flex-shrink: 0;
 }
 
-.diagram-arrival-msg {
-  display: block;
-  font-size: 0.88rem;
-  font-weight: 750;
-  line-height: 1.35;
-}
-
-.diagram-arrival-sub {
-  display: block;
-  margin-top: 0.15rem;
-  font-size: 0.68rem;
-  color: #94a3b8;
-  line-height: 1.3;
-  word-break: keep-all;
-}
-
-.diagram-wing--right .diagram-arrival-sub {
+.line-board-time {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #e65d3e;
   text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.line-board-empty {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 .subway-input {

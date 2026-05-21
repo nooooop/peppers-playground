@@ -1,5 +1,7 @@
 /** 서울시 지하철 실시간 도착정보 (열린데이터 / swopenapi.seoul.go.kr) */
 
+import { getApiNameHint, resolveApiStationName } from "../data/subwayStationApiNames";
+
 export type SubwayArrivalRow = {
   subwayId: string;
   subwayNm: string;
@@ -26,8 +28,12 @@ type SeoulApiPayload = {
     RESULT?: { CODE?: string; MESSAGE?: string };
     row?: RawArrival | RawArrival[];
   };
-  errorMessage?: { code?: string; message?: string };
+  errorMessage?: { code?: string; message?: string; status?: number };
   realtimeArrivalList?: RawArrival[];
+  /** INFO-200 등 오류 시 최상위 필드 */
+  code?: string;
+  message?: string;
+  status?: number;
 };
 
 type RawArrival = Partial<SubwayArrivalRow> & Record<string, unknown>;
@@ -97,11 +103,30 @@ export function parseSeoulSubwayResponse(data: SeoulApiPayload): {
     };
   }
 
+  const code = data.errorMessage?.code ?? data.code ?? "";
+  const message = data.errorMessage?.message ?? data.message ?? "";
+
   return {
-    code: data.errorMessage?.code ?? "",
-    message: data.errorMessage?.message ?? "",
+    code,
+    message,
     arrivals: (data.realtimeArrivalList ?? []).map(normalizeRawRow),
   };
+}
+
+async function fetchStationArrivalsOnce(
+  apiKey: string,
+  apiStationName: string,
+  endIndex: number
+): Promise<{ code: string; message: string; arrivals: SubwayArrivalRow[] }> {
+  const url = `${SEOUL_SUBWAY_BASE}/${encodeURIComponent(apiKey)}/json/realtimeStationArrival/0/${endIndex}/${encodeURIComponent(apiStationName)}`;
+
+  const res = await fetch(url, { next: { revalidate: 0 } });
+  if (!res.ok) {
+    return { code: "HTTP_ERROR", message: `조회 실패 (HTTP ${res.status})`, arrivals: [] };
+  }
+
+  const data = (await res.json()) as SeoulApiPayload;
+  return parseSeoulSubwayResponse(data);
 }
 
 export async function fetchStationArrivals(
@@ -109,52 +134,51 @@ export async function fetchStationArrivals(
   stationName: string,
   endIndex = 20
 ): Promise<StationArrivalResult> {
-  const name = stationName.trim();
-  if (!name) {
-    return { stationName: name, ok: false, message: "역명이 비어 있습니다.", arrivals: [] };
+  const displayName = stationName.trim();
+  if (!displayName) {
+    return { stationName: displayName, ok: false, message: "역명이 비어 있습니다.", arrivals: [] };
   }
 
-  const url = `${SEOUL_SUBWAY_BASE}/${encodeURIComponent(apiKey)}/json/realtimeStationArrival/0/${endIndex}/${encodeURIComponent(name)}`;
+  const apiName = resolveApiStationName(displayName);
 
-  let res: Response;
+  let parsed: { code: string; message: string; arrivals: SubwayArrivalRow[] };
   try {
-    res = await fetch(url, { next: { revalidate: 0 } });
+    parsed = await fetchStationArrivalsOnce(apiKey, apiName, endIndex);
   } catch {
-    return { stationName: name, ok: false, message: "서울시 API에 연결할 수 없습니다.", arrivals: [] };
+    return {
+      stationName: displayName,
+      ok: false,
+      message: "서울시 API에 연결할 수 없습니다.",
+      arrivals: [],
+    };
   }
 
-  if (!res.ok) {
-    return { stationName: name, ok: false, message: `조회 실패 (HTTP ${res.status})`, arrivals: [] };
-  }
-
-  let data: SeoulApiPayload;
-  try {
-    data = (await res.json()) as SeoulApiPayload;
-  } catch {
-    return { stationName: name, ok: false, message: "응답을 해석할 수 없습니다.", arrivals: [] };
-  }
-
-  const { code, message: apiMessage, arrivals } = parseSeoulSubwayResponse(data);
+  const { code, message: apiMessage, arrivals } = parsed;
 
   if (code && code !== "INFO-000") {
+    const hint = getApiNameHint(displayName);
+    const extra =
+      code === "INFO-200" && hint
+        ? ` API 공식 역명은 「${hint}」 입니다. 즐겨찾기를 삭제 후 다시 추가해 보세요.`
+        : "";
     return {
-      stationName: name,
+      stationName: displayName,
       ok: false,
-      message: apiMessage || `API 오류 (${code})`,
+      message: (apiMessage || `API 오류 (${code})`) + extra,
       arrivals: [],
     };
   }
 
   if (arrivals.length === 0) {
     return {
-      stationName: name,
+      stationName: displayName,
       ok: true,
       message: "도착 예정 열차가 없거나 운행이 종료되었을 수 있습니다.",
       arrivals: [],
     };
   }
 
-  return { stationName: name, ok: true, arrivals };
+  return { stationName: displayName, ok: true, arrivals };
 }
 
 export function getSeoulSubwayApiKey(): string {

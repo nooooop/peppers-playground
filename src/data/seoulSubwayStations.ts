@@ -1,3 +1,5 @@
+import { STATION_API_ALIASES } from "./subwayStationApiNames";
+
 /** 서울·수도권 지하철 역명 (자동완성용, 전 역이 아님 — API는 목록 밖 역명도 조회 가능) */
 
 /** 입력 정규화: "증산역" → "증산" */
@@ -191,10 +193,23 @@ export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
 export function filterStationNames(query: string, limit = 12): string[] {
   const q = normalizeStationName(query);
   if (!q) return [];
-  const matches = SEOUL_SUBWAY_STATION_NAMES.filter((name) => name.includes(q));
-  if (matches.length > 0) return matches.slice(0, limit);
-  if (q.length >= 2) return [q];
-  return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const name of SEOUL_SUBWAY_STATION_NAMES) {
+    if (name.includes(q) && !seen.has(name)) {
+      seen.add(name);
+      out.push(name);
+    }
+  }
+  for (const [display, api] of Object.entries(STATION_API_ALIASES)) {
+    if ((display.includes(q) || api.includes(q)) && !seen.has(display)) {
+      seen.add(display);
+      out.push(display);
+    }
+  }
+  if (out.length === 0 && q.length >= 2) return [q];
+  return out.slice(0, limit);
 }
 
 export function isLikelyStationName(name: string): boolean {

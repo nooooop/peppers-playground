@@ -3,27 +3,24 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   filterStationNames,
-  SEOUL_SUBWAY_STATION_NAMES,
+  isLikelyStationName,
+  normalizeStationName,
 } from "../data/seoulSubwayStations";
 import { useDocumentVisible } from "../hooks/useDocumentVisible";
 import {
   MAX_SUBWAY_FAVORITES,
   useSubwayFavorites,
 } from "../hooks/useSubwayFavorites";
+import { getStationDiagramLayout } from "../data/subwayStationLayouts";
 import type { StationArrivalResult, SubwayArrivalRow } from "../lib/seoulSubway";
+import { SubwayStationDiagram } from "./SubwayStationDiagram";
 
-const REFRESH_MS = 10_000;
-const STATION_SET = new Set<string>(SEOUL_SUBWAY_STATION_NAMES);
+const REFRESH_SEC = 20;
+const REFRESH_MS = REFRESH_SEC * 1000;
 
 type ArrivalsResponse = {
   updatedAt: string;
-  usingSampleKey?: boolean;
   stations: StationArrivalResult[];
-};
-
-type KeyConfig = {
-  mode: "sample" | "development";
-  configured: boolean;
 };
 
 function formatUpdatedAt(iso: string): string {
@@ -45,15 +42,33 @@ function ArrivalCard({ row }: { row: SubwayArrivalRow }) {
 }
 
 function StationBlock({ result }: { result: StationArrivalResult }) {
+  const diagramLayout = getStationDiagramLayout(result.stationName);
+
+  if (!result.ok && result.message) {
+    return (
+      <article className="station-block">
+        <h3 className="station-name">{result.stationName}</h3>
+        <p className="station-hint error">{result.message}</p>
+      </article>
+    );
+  }
+
+  if (result.ok && result.arrivals.length === 0 && result.message) {
+    return (
+      <article className="station-block">
+        <h3 className="station-name">{result.stationName}</h3>
+        <p className="station-hint">{result.message}</p>
+      </article>
+    );
+  }
+
+  if (diagramLayout && result.arrivals.length > 0) {
+    return <SubwayStationDiagram result={result} layout={diagramLayout} />;
+  }
+
   return (
     <article className="station-block">
       <h3 className="station-name">{result.stationName}</h3>
-      {!result.ok && result.message ? (
-        <p className="station-hint error">{result.message}</p>
-      ) : null}
-      {result.ok && result.arrivals.length === 0 && result.message ? (
-        <p className="station-hint">{result.message}</p>
-      ) : null}
       {result.arrivals.length > 0 ? (
         <ul className="arrival-list">
           {result.arrivals.map((row, i) => (
@@ -75,15 +90,7 @@ export function SubwayPanel({ active }: { active: boolean }) {
   const [data, setData] = useState<ArrivalsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [keyConfig, setKeyConfig] = useState<KeyConfig | null>(null);
-
-  useEffect(() => {
-    if (!active) return;
-    void fetch("/api/subway/config")
-      .then((r) => r.json())
-      .then((json: KeyConfig) => setKeyConfig(json))
-      .catch(() => setKeyConfig(null));
-  }, [active]);
+  const [countdown, setCountdown] = useState(REFRESH_SEC);
 
   const suggestions = useMemo(() => filterStationNames(query), [query]);
   const stationNames = useMemo(() => favorites.map((f) => f.name), [favorites]);
@@ -112,23 +119,40 @@ export function SubwayPanel({ active }: { active: boolean }) {
       setFetchError(err instanceof Error ? err.message : "알 수 없는 오류");
     } finally {
       setLoading(false);
+      setCountdown(REFRESH_SEC);
     }
   }, [stationNames]);
 
   const shouldPoll = active && visible && stationNames.length > 0;
 
   useEffect(() => {
-    if (!shouldPoll) return;
+    if (!shouldPoll) {
+      setCountdown(REFRESH_SEC);
+      return;
+    }
+    setCountdown(REFRESH_SEC);
     void fetchArrivals();
-    const id = window.setInterval(() => void fetchArrivals(), REFRESH_MS);
-    return () => window.clearInterval(id);
+    const refreshId = window.setInterval(() => void fetchArrivals(), REFRESH_MS);
+    return () => window.clearInterval(refreshId);
   }, [shouldPoll, fetchArrivals]);
+
+  useEffect(() => {
+    if (!shouldPoll) return;
+    const tickId = window.setInterval(() => {
+      setCountdown((sec) => (sec <= 1 ? REFRESH_SEC : sec - 1));
+    }, 1000);
+    return () => window.clearInterval(tickId);
+  }, [shouldPoll]);
 
   function tryAddStation(name: string) {
     setAddError(null);
-    const trimmed = name.trim();
+    const trimmed = normalizeStationName(name);
     if (!trimmed) {
       setAddError("역명을 입력하세요.");
+      return;
+    }
+    if (!isLikelyStationName(trimmed)) {
+      setAddError("역명이 너무 짧거나 깁니다.");
       return;
     }
     if (hasDuplicate(trimmed)) {
@@ -137,10 +161,6 @@ export function SubwayPanel({ active }: { active: boolean }) {
     }
     if (isFull) {
       setAddError(`즐겨찾기는 최대 ${MAX_SUBWAY_FAVORITES}개까지입니다.`);
-      return;
-    }
-    if (!STATION_SET.has(trimmed)) {
-      setAddError("목록에 있는 역명을 정확히 입력하세요. (예: 강남, 홍대입구)");
       return;
     }
     addFavorite(trimmed);
@@ -163,8 +183,9 @@ export function SubwayPanel({ active }: { active: boolean }) {
     <section className="panel subway-panel">
       <h2 className="panel-title">지하철 도착</h2>
       <p className="panel-desc">
-        즐겨찾기 역(최대 {MAX_SUBWAY_FAVORITES}개). 화면이 보일 때만 {REFRESH_MS / 1000}초마다
-        갱신합니다.
+        즐겨찾기 역(최대 {MAX_SUBWAY_FAVORITES}개). 화면이 보일 때만 {REFRESH_SEC}초마다
+        갱신합니다. 자동완성은 주요 역만 보여 주며, 서울·수도권 역명(예: 증산, 증산역)을 입력해
+        추가할 수 있습니다.
       </p>
 
       <div className="subway-add">
@@ -187,7 +208,7 @@ export function SubwayPanel({ active }: { active: boolean }) {
                 onAddStation();
               }
             }}
-            placeholder="역명 검색 (예: 강남)"
+            placeholder="역명 검색 (예: 증산, 강남)"
             disabled={isFull}
             autoComplete="off"
           />
@@ -200,6 +221,21 @@ export function SubwayPanel({ active }: { active: boolean }) {
             추가
           </button>
         </div>
+
+        {stationNames.length > 0 ? (
+          <div className="refresh-timer" aria-live="polite">
+            {!visible ? (
+              <span className="refresh-timer-paused">백그라운드 — 갱신·타이머 일시정지</span>
+            ) : loading ? (
+              <span className="refresh-timer-active">갱신 중…</span>
+            ) : (
+              <span className="refresh-timer-active">
+                다음 갱신까지 <strong className="refresh-timer-sec">{countdown}</strong>초
+              </span>
+            )}
+          </div>
+        ) : null}
+
         {suggestions.length > 0 && query.trim() ? (
           <ul className="suggestion-list" role="listbox" aria-label="역명 제안">
             {suggestions.map((name) => (
@@ -244,36 +280,9 @@ export function SubwayPanel({ active }: { active: boolean }) {
         )}
       </section>
 
-      <div className="status-row">
-        {loading ? <span className="status-pill">갱신 중…</span> : null}
-        {!visible && stationNames.length > 0 ? (
-          <span className="status-pill muted">백그라운드 — 갱신 일시중지</span>
-        ) : null}
-        {shouldPoll && !loading ? (
-          <span className="status-pill live">화면 켜짐 — 자동 갱신</span>
-        ) : null}
-        {data?.updatedAt ? (
-          <span className="status-time">마지막 갱신: {formatUpdatedAt(data.updatedAt)}</span>
-        ) : null}
-      </div>
-
-      {keyConfig?.mode === "development" || (data && !data.usingSampleKey) ? (
-        <p className="api-notice api-notice--ok">정식 인증키(개발계정)로 조회 중입니다.</p>
-      ) : (
-        <p className="api-notice">
-          지금은 <strong>sample</strong> 키입니다. 공공데이터포털에서 발급한 키를{" "}
-          <code>SEOUL_OPEN_API_KEY</code>에 넣으세요.{" "}
-          <a
-            className="api-notice-link"
-            href="https://www.data.go.kr/data/15125683/openapi.do"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            활용신청
-          </a>
-          · 로컬: <code>.env.local</code> · 배포: 호스팅 환경 변수 후 재배포
-        </p>
-      )}
+      {data?.updatedAt && stationNames.length > 0 ? (
+        <p className="status-time">마지막 갱신: {formatUpdatedAt(data.updatedAt)}</p>
+      ) : null}
 
       {fetchError ? <p className="field-error">{fetchError}</p> : null}
 

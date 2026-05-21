@@ -10,6 +10,7 @@ export type SubwayArrivalRow = {
   arvlMsg3: string;
   btrainSttus: string;
   barvlDt: string;
+  bstatnNm: string;
 };
 
 export type StationArrivalResult = {
@@ -72,6 +73,7 @@ function normalizeRawRow(raw: RawArrival): SubwayArrivalRow {
     arvlMsg3: String(raw.arvlMsg3 ?? ""),
     btrainSttus: String(raw.btrainSttus ?? ""),
     barvlDt: String(raw.barvlDt ?? ""),
+    bstatnNm: String(raw.bstatnNm ?? ""),
   };
 }
 

@@ -1,4 +1,10 @@
-/** 서울·수도권 지하철 역명 (도착 API 조회용, 일부) */
+/** 서울·수도권 지하철 역명 (자동완성용, 전 역이 아님 — API는 목록 밖 역명도 조회 가능) */
+
+/** 입력 정규화: "증산역" → "증산" */
+export function normalizeStationName(input: string): string {
+  return input.trim().replace(/\s+/g, "").replace(/역$/u, "");
+}
+
 export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
   "가락시장",
   "가산디지털단지",
@@ -12,18 +18,22 @@ export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
   "공덕",
   "광나루",
   "광화문",
+  "광흥창",
   "교대",
+  "구산",
   "구로",
   "구로디지털단지",
   "구청",
   "군자",
   "굽은다리",
+  "고려대",
   "금정",
   "금호",
   "까치산",
   "남구로",
   "남부터미널",
   "남영",
+  "남성",
   "노량진",
   "노원",
   "녹번",
@@ -34,6 +44,7 @@ export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
   "대모산입구",
   "대방",
   "대청",
+  "대흥",
   "덕수",
   "도곡",
   "도림천",
@@ -42,9 +53,13 @@ export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
   "독립문",
   "동대문",
   "동대문역사문화공원",
-  "동작",
   "둔촌동",
   "디지털미디어시티",
+  "독바위",
+  "돌곶이",
+  "동묘앞",
+  "동작",
+  "둔촌오륜",
   "마곡",
   "마들",
   "마포",
@@ -64,6 +79,7 @@ export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
   "보라매",
   "보문",
   "봉천",
+  "봉화산",
   "불광",
   "사가정",
   "사당",
@@ -71,7 +87,11 @@ export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
   "삼성",
   "삼성중앙",
   "삼양",
+  "살피재",
+  "상도",
   "상봉",
+  "상수",
+  "상월곡",
   "상왕십리",
   "상일동",
   "새절",
@@ -85,6 +105,7 @@ export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
   "선정릉",
   "성수",
   "성신여대입구",
+  "신용산",
   "소요산",
   "송파",
   "수서",
@@ -109,7 +130,9 @@ export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
   "어린이대공원",
   "여의도",
   "역삼",
+  "역촌",
   "연신내",
+  "응암",
   "영등포",
   "영등포구청",
   "오금",
@@ -133,20 +156,25 @@ export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
   "잠실",
   "잠실나루",
   "잠실새내",
+  "장승배기",
   "장한평",
   "장지",
   "종각",
   "종로3가",
   "종합운동장",
+  "증산",
   "중계",
   "중곡",
   "중화",
   "창동",
+  "창신",
   "천호",
+  "총신대입구",
   "청구",
   "청량리",
   "충무로",
   "태릉입구",
+  "포청",
   "하남검단산",
   "하남시청",
   "학동",
@@ -155,10 +183,21 @@ export const SEOUL_SUBWAY_STATION_NAMES: readonly string[] = [
   "홍제",
   "회기",
   "효창공원앞",
+  "화랑대",
+  "월곡",
+  "월드컵경기장",
 ] as const;
 
 export function filterStationNames(query: string, limit = 12): string[] {
-  const q = query.trim();
+  const q = normalizeStationName(query);
   if (!q) return [];
-  return SEOUL_SUBWAY_STATION_NAMES.filter((name) => name.includes(q)).slice(0, limit);
+  const matches = SEOUL_SUBWAY_STATION_NAMES.filter((name) => name.includes(q));
+  if (matches.length > 0) return matches.slice(0, limit);
+  if (q.length >= 2) return [q];
+  return [];
+}
+
+export function isLikelyStationName(name: string): boolean {
+  const n = normalizeStationName(name);
+  return n.length >= 2 && n.length <= 12;
 }

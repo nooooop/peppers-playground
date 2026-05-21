@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { normalizeStationName } from "../data/seoulSubwayStations";
 
 export type SubwayFavorite = {
   id: string;
@@ -67,7 +68,7 @@ export function useSubwayFavorites() {
 
   const isFull = favorites.length >= MAX_SUBWAY_FAVORITES;
   const hasDuplicate = useCallback(
-    (name: string) => favorites.some((f) => f.name === name.trim()),
+    (name: string) => favorites.some((f) => f.name === normalizeStationName(name)),
     [favorites]
   );
 

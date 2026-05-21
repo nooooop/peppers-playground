@@ -20,16 +20,22 @@ npm run dev
 - **날씨**: Open‑Meteo (키 없음), 시간대 `Asia/Seoul`, 기본 도시 목록(서울/부산/인천/대구/대전/광주/제주)
 - **국가**: REST Countries (키 없음), 대한민국(`KR`) 정보
 
-### 지하철 API 키
+### 지하철 API 키 (정식 / 개발계정)
 
-1. [공공데이터포털](https://www.data.go.kr/data/15125683/openapi.do) 또는 [서울 열린데이터](https://data.seoul.go.kr/)에서 **지하철 실시간 도착정보** 활용신청
-2. 프로젝트 루트에 `.env.local` 생성:
+**상세 절차:** [docs/subway-api-key-setup.md](docs/subway-api-key-setup.md)
+
+1. [공공데이터포털 — 지하철 실시간 도착정보](https://www.data.go.kr/data/15125683/openapi.do)에서 **개발계정** 활용신청 (개인 가능)
+2. 마이페이지에서 **일반 인증키** 복사
+3. 프로젝트 루트 `.env.local`:
 
 ```bash
 SEOUL_OPEN_API_KEY=발급받은_인증키
 ```
 
-키가 없으면 `sample` 키로 동작합니다(연동 테스트용, 호출·건수 제한 있음).
+4. `npm run dev` 재시작 후 `npm run check:subway-key` 로 확인
+5. **배포 사이트**에는 호스팅 대시보드에 동일 변수 추가 후 **재배포**
+
+키가 없으면 `sample` 키로 동작합니다(제한 있음).
 
 ## 파일 구조
 

@@ -424,6 +424,17 @@ a {
   font-size: 0.85em;
 }
 
+.api-notice--ok {
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.28);
+  color: #166534;
+}
+
+.api-notice-link {
+  color: var(--accent);
+  font-weight: 650;
+}
+
 .station-results {
   display: flex;
   flex-direction: column;

@@ -19,18 +19,87 @@ export type StationArrivalResult = {
   arrivals: SubwayArrivalRow[];
 };
 
-type SeoulApiRoot = {
+/** 신·구 API 응답 (서울시 포맷 변경 대응) */
+type SeoulApiPayload = {
   realtimeStationArrival?: {
     RESULT?: { CODE?: string; MESSAGE?: string };
-    row?: SubwayArrivalRow | SubwayArrivalRow[];
+    row?: RawArrival | RawArrival[];
   };
+  errorMessage?: { code?: string; message?: string };
+  realtimeArrivalList?: RawArrival[];
 };
+
+type RawArrival = Partial<SubwayArrivalRow> & Record<string, unknown>;
 
 const SEOUL_SUBWAY_BASE = "http://swopenapi.seoul.go.kr/api/subway";
 
-function normalizeRows(row: SubwayArrivalRow | SubwayArrivalRow[] | undefined): SubwayArrivalRow[] {
+const SUBWAY_LINE_NAMES: Record<string, string> = {
+  "1001": "1호선",
+  "1002": "2호선",
+  "1003": "3호선",
+  "1004": "4호선",
+  "1005": "5호선",
+  "1006": "6호선",
+  "1007": "7호선",
+  "1008": "8호선",
+  "1009": "9호선",
+  "1063": "경의중앙선",
+  "1065": "공항철도",
+  "1067": "인천1호선",
+  "1069": "인천2호선",
+  "1071": "수인분당선",
+  "1075": "수인선",
+  "1077": "신분당선",
+  "1092": "우이신설선",
+  "1093": "김포골드라인",
+  "1032": "GTX-A",
+};
+
+function lineNameFromId(subwayId: string): string {
+  return SUBWAY_LINE_NAMES[subwayId] ?? (subwayId ? `노선 ${subwayId}` : "지하철");
+}
+
+function normalizeRawRow(raw: RawArrival): SubwayArrivalRow {
+  const subwayId = String(raw.subwayId ?? "");
+  const subwayNm = String(raw.subwayNm ?? "").trim() || lineNameFromId(subwayId);
+  return {
+    subwayId,
+    subwayNm,
+    statnNm: String(raw.statnNm ?? ""),
+    updnLine: String(raw.updnLine ?? ""),
+    trainLineNm: String(raw.trainLineNm ?? ""),
+    arvlMsg2: String(raw.arvlMsg2 ?? ""),
+    arvlMsg3: String(raw.arvlMsg3 ?? ""),
+    btrainSttus: String(raw.btrainSttus ?? ""),
+    barvlDt: String(raw.barvlDt ?? ""),
+  };
+}
+
+function normalizeRows(row: RawArrival | RawArrival[] | undefined): SubwayArrivalRow[] {
   if (!row) return [];
-  return Array.isArray(row) ? row : [row];
+  const list = Array.isArray(row) ? row : [row];
+  return list.map(normalizeRawRow);
+}
+
+export function parseSeoulSubwayResponse(data: SeoulApiPayload): {
+  code: string;
+  message: string;
+  arrivals: SubwayArrivalRow[];
+} {
+  const legacy = data.realtimeStationArrival;
+  if (legacy) {
+    return {
+      code: legacy.RESULT?.CODE ?? "",
+      message: legacy.RESULT?.MESSAGE ?? "",
+      arrivals: normalizeRows(legacy.row),
+    };
+  }
+
+  return {
+    code: data.errorMessage?.code ?? "",
+    message: data.errorMessage?.message ?? "",
+    arrivals: (data.realtimeArrivalList ?? []).map(normalizeRawRow),
+  };
 }
 
 export async function fetchStationArrivals(
@@ -56,16 +125,14 @@ export async function fetchStationArrivals(
     return { stationName: name, ok: false, message: `조회 실패 (HTTP ${res.status})`, arrivals: [] };
   }
 
-  let data: SeoulApiRoot;
+  let data: SeoulApiPayload;
   try {
-    data = (await res.json()) as SeoulApiRoot;
+    data = (await res.json()) as SeoulApiPayload;
   } catch {
     return { stationName: name, ok: false, message: "응답을 해석할 수 없습니다.", arrivals: [] };
   }
 
-  const block = data.realtimeStationArrival;
-  const code = block?.RESULT?.CODE ?? "";
-  const apiMessage = block?.RESULT?.MESSAGE ?? "";
+  const { code, message: apiMessage, arrivals } = parseSeoulSubwayResponse(data);
 
   if (code && code !== "INFO-000") {
     return {
@@ -76,7 +143,6 @@ export async function fetchStationArrivals(
     };
   }
 
-  const arrivals = normalizeRows(block?.row);
   if (arrivals.length === 0) {
     return {
       stationName: name,
@@ -91,9 +157,18 @@ export async function fetchStationArrivals(
 
 export function getSeoulSubwayApiKey(): string {
   const key = process.env.SEOUL_OPEN_API_KEY?.trim();
-  return key || "sample";
+  if (!key || key === "sample" || key === "your-api-key") {
+    return "sample";
+  }
+  return key;
 }
 
 export function isSampleApiKey(key: string): boolean {
   return key === "sample";
+}
+
+export type SeoulSubwayKeyMode = "sample" | "development";
+
+export function getSeoulSubwayKeyMode(): SeoulSubwayKeyMode {
+  return isSampleApiKey(getSeoulSubwayApiKey()) ? "sample" : "development";
 }

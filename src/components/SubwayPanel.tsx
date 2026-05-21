@@ -21,6 +21,11 @@ type ArrivalsResponse = {
   stations: StationArrivalResult[];
 };
 
+type KeyConfig = {
+  mode: "sample" | "development";
+  configured: boolean;
+};
+
 function formatUpdatedAt(iso: string): string {
   try {
     return new Date(iso).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
@@ -70,6 +75,15 @@ export function SubwayPanel({ active }: { active: boolean }) {
   const [data, setData] = useState<ArrivalsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [keyConfig, setKeyConfig] = useState<KeyConfig | null>(null);
+
+  useEffect(() => {
+    if (!active) return;
+    void fetch("/api/subway/config")
+      .then((r) => r.json())
+      .then((json: KeyConfig) => setKeyConfig(json))
+      .catch(() => setKeyConfig(null));
+  }, [active]);
 
   const suggestions = useMemo(() => filterStationNames(query), [query]);
   const stationNames = useMemo(() => favorites.map((f) => f.name), [favorites]);
@@ -243,12 +257,23 @@ export function SubwayPanel({ active }: { active: boolean }) {
         ) : null}
       </div>
 
-      {data?.usingSampleKey ? (
+      {keyConfig?.mode === "development" || (data && !data.usingSampleKey) ? (
+        <p className="api-notice api-notice--ok">정식 인증키(개발계정)로 조회 중입니다.</p>
+      ) : (
         <p className="api-notice">
-          샘플 키로 동작 중입니다. 본인 키는 <code>.env.local</code>에{" "}
-          <code>SEOUL_OPEN_API_KEY</code>를 설정하세요.
+          지금은 <strong>sample</strong> 키입니다. 공공데이터포털에서 발급한 키를{" "}
+          <code>SEOUL_OPEN_API_KEY</code>에 넣으세요.{" "}
+          <a
+            className="api-notice-link"
+            href="https://www.data.go.kr/data/15125683/openapi.do"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            활용신청
+          </a>
+          · 로컬: <code>.env.local</code> · 배포: 호스팅 환경 변수 후 재배포
         </p>
-      ) : null}
+      )}
 
       {fetchError ? <p className="field-error">{fetchError}</p> : null}
 
